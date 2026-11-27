@@ -1,0 +1,6 @@
+{
+  "name": "HD Deep Research",
+  "description": "Free Android-ready AI deep research app with live web grounding, offline report library, and GitHub source code integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,101 @@
+name: Build & Publish HD Deep Research APK
+
+on:
+  push:
+    branches: ['main']
+    paths-ignore:
+      - 'data/**'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21 for Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies and build bundled web assets
+        run: |
+          npm install
+          npm run build
+
+      - name: Sync native Capacitor Android project
+        run: |
+          rm -f capacitor.config.ts
+          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Apply custom HD Deep Research launcher icons and version
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const icon512 = "public/pwa-512x512.png";
+            const icon192 = "public/pwa-192x192.png";
+            const iconMask = "public/pwa-maskable-512x512.png";
+            const resDir = "android/app/src/main/res";
+            const densities = ["mipmap-mdpi", "mipmap-hdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"];
+            for (const d of densities) {
+              const dir = path.join(resDir, d);
+              if (fs.existsSync(dir)) {
+                if (fs.existsSync(icon512)) fs.copyFileSync(icon512, path.join(dir, "ic_launcher.png"));
+                if (fs.existsSync(icon192)) fs.copyFileSync(icon192, path.join(dir, "ic_launcher_round.png"));
+                if (fs.existsSync(iconMask)) fs.copyFileSync(iconMask, path.join(dir, "ic_launcher_foreground.png"));
+              }
+            }
+            const gradlePath = "android/app/build.gradle";
+            if (fs.existsSync(gradlePath)) {
+              const runNum = Number(process.env.GITHUB_RUN_NUMBER || 1);
+              let gradle = fs.readFileSync(gradlePath, "utf8");
+              gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${runNum}`);
+              gradle = gradle.replace(/versionName\s+"[^"]+"/, `versionName "1.0.${runNum}"`);
+              fs.writeFileSync(gradlePath, gradle);
+            }
+          '
+
+      - name: Assemble standalone Android APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Prepare shareable APK file
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk HD-Deep-Research.apk
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HD-Deep-Research-Android-APK
+          path: HD-Deep-Research.apk
+          retention-days: 30
+
+      - name: Publish direct download APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: HD Deep Research v1.0.${{ github.run_number }} (Android APK)
+          body: |
+            Standalone real Android APK for HD Deep Research (no Play Store required).
+            All app screens and offline library are bundled directly inside the APK.
+
+            **Install steps:**
+            1. Download **HD-Deep-Research.apk** below.
+            2. Tap the downloaded file on your Android phone and allow installation.
+            3. Small content & research updates sync automatically online; major APK updates notify you right inside the app.
+          files: HD-Deep-Research.apk

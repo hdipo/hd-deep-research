@@ -1,0 +1,27 @@
+{
+  "latestAppVersion": "1.0.0",
+  "apiBaseUrl": "https://ais-pre-2k7kerau3t33iwfz2q7qjf-273113077839.asia-northeast1.run.app",
+  "announcement": "",
+  "featuredTopics": [
+    {
+      "category": "Android Engineering",
+      "title": "Capacitor vs Trusted Web Activity (TWA) for free Android APKs in 2026",
+      "query": "Compare Capacitor vs Google Bubblewrap Trusted Web Activity (TWA) for building free Android APKs from React apps, including performance and offline storage."
+    },
+    {
+      "category": "AI & Hardware",
+      "title": "On-device AI models vs cloud APIs on mid-range Android smartphones",
+      "query": "Analyze running on-device small language models versus free cloud AI APIs on mid-range Android phones: battery impact, RAM requirements, latency, and accuracy."
+    },
+    {
+      "category": "Developer Ecosystem",
+      "title": "Best free GitHub Actions CI/CD workflows for automated APK releases",
+      "query": "What are the best free GitHub Actions workflows and caching strategies for compiling Android APKs automatically with Gradle and Capacitor?"
+    },
+    {
+      "category": "India Tech (Hinglish)",
+      "title": "Free AI tools aur Android app growth strategies 2026 me",
+      "query": "2026 me free Android AI research apps kaise build aur share karein bina server cost ke? Best free tools aur architecture Hinglish me samjhao."
+    }
+  ]
+}

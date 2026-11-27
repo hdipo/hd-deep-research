@@ -1,0 +1,11 @@
+{
+  "appId": "com.hdipo.hddeepresearch",
+  "appName": "HD Deep Research",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0B0F17",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
