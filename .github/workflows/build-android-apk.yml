@@ -30,14 +30,16 @@ jobs:
           java-version: '21'
 
       - name: Install dependencies and build bundled web assets
+        env:
+          VITE_APP_VERSION: 1.1.${{ github.run_number }}
         run: |
-          npm install
+          npm install --legacy-peer-deps
           npm run build
 
       - name: Sync native Capacitor Android project
         run: |
           rm -f capacitor.config.ts
-          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          npm install --legacy-peer-deps @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
           npx cap add android || true
           npx cap sync android
 
@@ -63,8 +65,8 @@ jobs:
             if (fs.existsSync(gradlePath)) {
               const runNum = Number(process.env.GITHUB_RUN_NUMBER || 1);
               let gradle = fs.readFileSync(gradlePath, "utf8");
-              gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${runNum}`);
-              gradle = gradle.replace(/versionName\s+"[^"]+"/, `versionName "1.0.${runNum}"`);
+              gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${100 + runNum}`);
+              gradle = gradle.replace(/versionName\s+"[^"]+"/, `versionName "1.1.${runNum}"`);
               fs.writeFileSync(gradlePath, gradle);
             }
           '
@@ -88,14 +90,19 @@ jobs:
       - name: Publish direct download APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: HD Deep Research v1.0.${{ github.run_number }} (Android APK)
+          tag_name: v1.1.${{ github.run_number }}
+          name: HD Deep Research v1.1.${{ github.run_number }} (Android APK)
           body: |
             Standalone real Android APK for HD Deep Research (no Play Store required).
             All app screens and offline library are bundled directly inside the APK.
 
+            **What is new in v1.1.${{ github.run_number }}:**
+            - Performance analytics dashboard (Win Rate, Realized vs Planned R:R, Sector Concentration & MTF Net ROE%).
+            - Full Nifty 1000 scan with live Market Regime guard and Long/Short recheck.
+            - Automatic in-app update notifications with mandatory lock on major updates.
+
             **Install steps:**
             1. Download **HD-Deep-Research.apk** below.
-            2. Tap the downloaded file on your Android phone and allow installation.
-            3. Small content & research updates sync automatically online; major APK updates notify you right inside the app.
+            2. Tap the downloaded file on your Android phone and tap Update/Install.
+            3. Your saved setups and reports stay intact on your device.
           files: HD-Deep-Research.apk

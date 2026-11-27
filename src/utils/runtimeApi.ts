@@ -44,6 +44,7 @@ export interface AppUpdateSyncResponse {
   hasSharedData: boolean;
   latestReleaseTag: string;
   latestReleaseUrl: string;
+  releaseNotes?: string;
   apkDownloadUrl: string;
   apkFileName: string;
   apkSize: number;
@@ -68,14 +69,16 @@ export async function fetchAppUpdateSync(
 
   const base = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   const [releaseRes, cfgRes] = await Promise.allSettled([
-    fetch(`${base}/releases/latest`, { headers: GH_HEADERS }),
+    fetch(`${base}/releases/latest`, { headers: GH_HEADERS, cache: 'no-store' }),
     fetch(`${base}/contents/data/app-config.json?ref=${encodeURIComponent(branch)}`, {
       headers: GH_HEADERS,
+      cache: 'no-store',
     }),
   ]);
 
   let latestReleaseTag = '';
   let latestReleaseUrl = '';
+  let releaseNotes = '';
   let apkDownloadUrl = '';
   let apkFileName = '';
   let apkSize = 0;
@@ -83,6 +86,7 @@ export async function fetchAppUpdateSync(
     const rData = await releaseRes.value.json();
     latestReleaseTag = rData.tag_name || '';
     latestReleaseUrl = rData.html_url || '';
+    releaseNotes = typeof rData.body === 'string' ? rData.body.trim() : '';
     const apkAsset = (rData.assets || []).find((a: { name?: string }) =>
       (a.name || '').toLowerCase().endsWith('.apk')
     );
@@ -114,6 +118,7 @@ export async function fetchAppUpdateSync(
     hasSharedData: false,
     latestReleaseTag,
     latestReleaseUrl,
+    releaseNotes,
     apkDownloadUrl,
     apkFileName,
     apkSize,

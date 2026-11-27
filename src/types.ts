@@ -239,6 +239,7 @@ export interface GitHubSyncStatus {
   hasSharedData?: boolean;
   latestReleaseTag: string;
   latestReleaseUrl: string;
+  releaseNotes?: string;
   apkDownloadUrl: string;
   apkFileName: string;
   apkSize: number;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BarChart3,
   Clock,
@@ -136,6 +136,8 @@ export default function App() {
   });
 
   const [syncStatus, setSyncStatus] = useState<GitHubSyncStatus | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const lastUpdateCheckRef = useRef<number>(0);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -167,47 +169,70 @@ export default function App() {
     }
   }, [deepReports]);
 
-  // Quiet background check for APK updates / remote API config
-  useEffect(() => {
+  const checkForUpdates = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastUpdateCheckRef.current < 10 * 60 * 1000) {
+      return;
+    }
     const parsed = parseRepoOwnerAndName(DEFAULT_GITHUB_REPO_URL);
     if (!parsed) return;
-    let cancelled = false;
 
-    fetchAppUpdateSync(parsed.owner, parsed.repo, 'main')
-      .then((data) => {
-        if (cancelled || !data) return;
-        if (data.remoteConfig) {
-          setRemoteConfig(data.remoteConfig);
-          try {
-            localStorage.setItem(STORAGE_REMOTE_CONFIG, JSON.stringify(data.remoteConfig));
-          } catch {
-            // ignore
-          }
+    lastUpdateCheckRef.current = now;
+    setIsCheckingUpdate(true);
+    try {
+      const data = await fetchAppUpdateSync(parsed.owner, parsed.repo, 'main');
+      if (!data) return;
+      if (data.remoteConfig) {
+        setRemoteConfig(data.remoteConfig);
+        try {
+          localStorage.setItem(STORAGE_REMOTE_CONFIG, JSON.stringify(data.remoteConfig));
+        } catch {
+          // ignore
         }
-        setSyncStatus({
-          latestCommitSha: data.latestCommitSha || '',
-          latestCommitMessage: data.latestCommitMessage || '',
-          latestCommitDate: data.latestCommitDate || '',
-          hasWorkflow: Boolean(data.hasWorkflow),
-          hasCapacitorConfig: Boolean(data.hasCapacitorConfig),
-          hasSharedData: Boolean(data.hasSharedData),
-          latestReleaseTag: data.latestReleaseTag || '',
-          latestReleaseUrl: data.latestReleaseUrl || '',
-          apkDownloadUrl: data.apkDownloadUrl || '',
-          apkFileName: data.apkFileName || '',
-          apkSize: data.apkSize || 0,
-          remoteReportsCount: 0,
-          syncedAt: data.syncedAt,
-        });
-      })
-      .catch(() => {
-        // Offline; ignore safely
+      }
+      setSyncStatus({
+        latestCommitSha: data.latestCommitSha || '',
+        latestCommitMessage: data.latestCommitMessage || '',
+        latestCommitDate: data.latestCommitDate || '',
+        hasWorkflow: Boolean(data.hasWorkflow),
+        hasCapacitorConfig: Boolean(data.hasCapacitorConfig),
+        hasSharedData: Boolean(data.hasSharedData),
+        latestReleaseTag: data.latestReleaseTag || '',
+        latestReleaseUrl: data.latestReleaseUrl || '',
+        releaseNotes: data.releaseNotes || '',
+        apkDownloadUrl: data.apkDownloadUrl || '',
+        apkFileName: data.apkFileName || '',
+        apkSize: data.apkSize || 0,
+        remoteReportsCount: 0,
+        syncedAt: data.syncedAt,
       });
-
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      // Offline; ignore safely
+    } finally {
+      setIsCheckingUpdate(false);
+    }
   }, []);
+
+  // Automatic check for APK updates / remote config on launch, app resume, and reconnect
+  useEffect(() => {
+    checkForUpdates(true);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkForUpdates(false);
+      }
+    };
+    const handleOnline = () => {
+      checkForUpdates(false);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [checkForUpdates]);
 
   const handleSavePlan = (nextPlan: SectionPlan) => {
     setPlans((prev) => {
@@ -465,7 +490,12 @@ export default function App() {
 
       {/* Main Content Workspace */}
       <main className="flex-1 pb-20 lg:pb-10">
-        <AppUpdateBanner syncStatus={syncStatus} remoteConfig={remoteConfig} />
+        <AppUpdateBanner
+          syncStatus={syncStatus}
+          remoteConfig={remoteConfig}
+          isCheckingUpdate={isCheckingUpdate}
+          onRecheckUpdate={() => checkForUpdates(true)}
+        />
 
         {activeTab === 'deep_research' ? (
           <DeepResearchStockView

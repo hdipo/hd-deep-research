@@ -341,6 +341,7 @@ async function startServer() {
 
       let latestReleaseTag = '';
       let latestReleaseUrl = '';
+      let releaseNotes = '';
       let apkDownloadUrl = '';
       let apkFileName = '';
       let apkSize = 0;
@@ -349,10 +350,12 @@ async function startServer() {
         const rData = (await releaseRes.value.json()) as {
           tag_name?: string;
           html_url?: string;
+          body?: string;
           assets?: Array<{ name?: string; browser_download_url?: string; size?: number }>;
         };
         latestReleaseTag = rData.tag_name || '';
         latestReleaseUrl = rData.html_url || '';
+        releaseNotes = typeof rData.body === 'string' ? rData.body.trim() : '';
         const apkAsset = (rData.assets || []).find((a) => (a.name || '').toLowerCase().endsWith('.apk'));
         if (apkAsset?.browser_download_url) {
           apkDownloadUrl = apkAsset.browser_download_url;
@@ -412,6 +415,7 @@ async function startServer() {
         hasSharedData,
         latestReleaseTag,
         latestReleaseUrl,
+        releaseNotes,
         apkDownloadUrl,
         apkFileName,
         apkSize,

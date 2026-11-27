@@ -1,5 +1,8 @@
 {
-  "latestAppVersion": "1.0.0",
+  "latestAppVersion": "1.1.0",
+  "minRequiredVersion": "1.1.0",
+  "forceUpdate": false,
+  "updateNotes": "Performance analytics tab with Win Rate, R:R & Sector charts; Nifty 1000 full scan + live Market Regime guard; Long/Short live recheck & risk-capped MTF calculator; automatic major update alerts.",
   "apiBaseUrl": "https://ais-pre-2k7kerau3t33iwfz2q7qjf-273113077839.asia-northeast1.run.app",
   "announcement": "",
   "featuredTopics": [
